@@ -51,8 +51,6 @@ export default function Index() {
       paddingHorizontal: 20,
       paddingTop: 20,
       paddingBottom: 24,
-      borderBottomWidth: 1,
-      borderBottomColor: colours.buttonBgColours,
     },
     headerTitle: {
       fontSize: 28,
@@ -84,8 +82,6 @@ export default function Index() {
       paddingHorizontal: 16,
       backgroundColor: colours.navBarBackground,
       borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colours.buttonBgColours,
       alignItems: "center",
     },
     viewAllText: {

@@ -48,8 +48,6 @@ export default function Profile() {
       paddingHorizontal: 20,
       paddingTop: 20,
       paddingBottom: 24,
-      borderBottomWidth: 1,
-      borderBottomColor: colours.buttonBgColours,
     },
     nameContainer: {
       marginBottom: 16,
