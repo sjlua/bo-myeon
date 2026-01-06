@@ -1,8 +1,8 @@
 import { Platform, useColorScheme } from "react-native";
-import { AppColours } from "../../constants/colours";
 import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 import { Tabs } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { AppColours } from "@/constants/colours";
 
 export default function TabsLayout() {
   // Get the colour scheme from app.json userInterfaceStyle, null fallback is light
