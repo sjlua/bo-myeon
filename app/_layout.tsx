@@ -18,7 +18,12 @@ export default function RootLayout() {
       {/* Settings page */}
       <Stack.Screen
         name="settings"
-        options={{ title: "Settings", headerBackTitle: "Profile" }}
+        options={{
+          title: "Settings",
+          headerBackTitle: "Profile",
+          headerStyle: { backgroundColor: colours.navBarBackground },
+          headerTintColor: colours.heading,
+        }}
       />
     </Stack>
   );
