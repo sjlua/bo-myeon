@@ -58,7 +58,10 @@ export default function Settings() {
   });
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.container}
+    >
       <Text style={styles.header}>Settings</Text>
 
       {/* Dark/Light Mode Picker */}
@@ -66,20 +69,6 @@ export default function Settings() {
         <Text style={styles.settingLabel}>Dark Mode</Text>
         <Switch value={isDarkMode} onValueChange={toggleDarkMode} disabled />
       </View>
-
-      {/* Link Trakt Account */}
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: colours.buttonBgColours }]}
-      >
-        <MaterialCommunityIcons
-          name="youtube-tv"
-          size={24}
-          color={colours.buttonText}
-        />
-        <Text style={[styles.buttonText, { color: colours.buttonText }]}>
-          Link Trakt Account
-        </Text>
-      </TouchableOpacity>
 
       {/* Delete Account */}
       <TouchableOpacity style={[styles.button, styles.deleteButton]}>
