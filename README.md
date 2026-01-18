@@ -1,50 +1,103 @@
-# Welcome to your Expo app 👋
+# Bo-Myeon 🎬
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native mobile app for rating whatever you watch.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Movie Search**: Search for movies using the OMDB API
+- **Movie Details**: View comprehensive information about movies
+- **User Profiles**: Manage your movie profile and preferences
+- **Settings**: Customize app behavior and preferences
+- **Cross-Platform**: Works on iOS, Android, and web
+
+## Tech Stack
+
+- **Framework**: React Native with Expo
+- **Navigation**: Expo Router (file-based routing)
+- **UI Components**: React Navigation with bottom tabs
+- **Styling**: React Native with vector icons
+- **Language**: TypeScript
+- **API**: OMDB (Open Movie Database)
+- **Additional**: React Native Reanimated, React Native Gesture Handler
+
+## Prerequisites
+
+- Node.js and npm installed
+- Expo CLI (optional but recommended)
+- OMDB API key (get one at [omdbapi.com](https://www.omdbapi.com))
+
+## Getting Started
+
+1. **Install dependencies**
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. **Set up environment variables**
 
-   ```bash
-   npx expo start
+   Create a `.env` file in the root directory and add your OMDB API key:
+
+   ```
+   EXPO_PUBLIC_OMDB_API_KEY=your_api_key_here
    ```
 
-In the output, you'll find options to open the app in a
+3. **Start the app**
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```bash
+   npm start
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+   In the output, you'll find options to open the app in:
+   - [iOS Simulator](https://docs.expo.dev/workflow/ios-simulator/)
+   - [Android Emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+   - [Expo Go](https://expo.dev/go)
+   - Web browser
 
-## Get a fresh project
+## Available Scripts
 
-When you're ready, run:
+- `npm start` - Start the development server
+- `npm run android` - Start on Android emulator
+- `npm run ios` - Start on iOS simulator
+- `npm run web` - Start web version
+- `npm run lint` - Run ESLint
 
-```bash
-npm run reset-project
+## Project Structure
+
+```
+bo-myeon/
+├── app/                 # Main app directory (Expo Router)
+│   ├── (tabs)/         # Tab-based screens
+│   │   ├── index.tsx   # Home/Browse media
+│   │   ├── search.tsx  # Search media
+│   │   └── profile.tsx # User profile
+│   ├── _layout.tsx     # Root layout
+│   └── settings.tsx    # Settings screen
+├── components/         # Reusable React components
+├── constants/          # App constants
+├── types/              # TypeScript type definitions
+├── assets/             # Images and icons
+└── config/             # Configuration files
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Development
 
-## Learn more
+This project uses Expo's managed workflow and includes:
 
-To learn more about developing your project with Expo, look at the following resources:
+- **File-based routing** with Expo Router for intuitive navigation
+- **TypeScript** for type safety
+- **ESLint** for code quality
+- **Bottom tab navigation** for easy access to main screens
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Learn More
 
-## Join the community
+For more information about the technologies used:
 
-Join our community of developers creating universal apps.
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation](https://reactnative.dev/)
+- [Expo Router Guide](https://docs.expo.dev/router/introduction/)
+- [OMDB API Documentation](https://www.omdbapi.com/)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Contributing
+
+This is a super early side project of mine, there is no guarantee that anything will work, or that it will make it to the app store. Feel free to create issues/PRs though.
