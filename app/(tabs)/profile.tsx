@@ -9,13 +9,15 @@ import {
   StyleSheet,
   useColorScheme,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { AppColours } from "@/constants/colours";
 import { Link } from "expo-router";
+import { MediaItem } from "@/types/media";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Placeholder data for top shows and films
-const PLACEHOLDER_SHOWS = [
+const PLACEHOLDER_SHOWS: MediaItem[] = [
   { id: "1", title: "Breaking Bad", rating: 9.5, poster: "📺" },
   { id: "2", title: "Chernobyl", rating: 9.3, poster: "📺" },
   { id: "3", title: "Succession", rating: 9.1, poster: "📺" },
@@ -23,7 +25,7 @@ const PLACEHOLDER_SHOWS = [
   { id: "5", title: "Game of Thrones", rating: 8.7, poster: "📺" },
 ];
 
-const PLACEHOLDER_FILMS = [
+const PLACEHOLDER_FILMS: MediaItem[] = [
   { id: "1", title: "Inception", rating: 8.8, poster: "🎬" },
   { id: "2", title: "The Shawshank Redemption", rating: 9.3, poster: "🎬" },
   { id: "3", title: "Parasite", rating: 8.6, poster: "🎬" },
@@ -206,7 +208,27 @@ export default function Profile() {
   );
   const [averageRating] = useState(8.7);
 
-  const PosterCard = ({ item }) => (
+  useEffect(() => {
+    // Load name and description from AsyncStorage on component mount
+    AsyncStorage.getItem("profileName").then((storedName) => {
+      if (storedName) setName(storedName);
+    });
+    AsyncStorage.getItem("profileDescription").then((storedDescription) => {
+      if (storedDescription) setDescription(storedDescription);
+    });
+  }, []);
+
+  useEffect(() => {
+    // Save name to AsyncStorage whenever it changes
+    AsyncStorage.setItem("profileName", name);
+  }, [name]);
+
+  useEffect(() => {
+    // Save description to AsyncStorage whenever it changes
+    AsyncStorage.setItem("profileDescription", description);
+  }, [description]);
+
+  const PosterCard = ({ item }: { item: MediaItem }) => (
     <View style={styles.posterCard}>
       <View style={styles.posterImage}>
         <Text style={styles.posterEmoji}>{item.poster}</Text>
