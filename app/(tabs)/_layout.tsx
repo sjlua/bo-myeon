@@ -11,7 +11,8 @@ export default function TabsLayout() {
 
   // Check if iOS 26 for native tab bar
   const isNativeTabsSupported =
-    Platform.OS === "ios" && Number(Platform.Version) >= 26;
+    Platform.OS === "ios" &&
+    parseInt(String(Platform.Version).split(".")[0], 10) >= 26;
 
   if (isNativeTabsSupported) {
     // Native tab bar
@@ -36,9 +37,17 @@ export default function TabsLayout() {
     return (
       <Tabs
         screenOptions={{
-          headerStyle: { backgroundColor: theme.navBarBackground },
+          headerStyle: {
+            backgroundColor: theme.navBarBackground,
+            borderBottomWidth: 0,
+            shadowColor: "transparent",
+          },
           headerTintColor: theme.heading,
           tabBarActiveTintColor: theme.navBarButtonFocused,
+          tabBarStyle: {
+            backgroundColor: theme.navBarBackground,
+            borderTopWidth: 0,
+          },
         }}
       >
         {/* Home tab */}
