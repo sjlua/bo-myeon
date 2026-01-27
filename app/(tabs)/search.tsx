@@ -52,7 +52,7 @@ export default function Search() {
       paddingBottom: 40,
     },
     headerSection: {
-      backgroundColor: colours.navBarBackground,
+      backgroundColor: colours.background,
       paddingHorizontal: 20,
       paddingTop: 20,
       paddingBottom: 20,
@@ -66,7 +66,7 @@ export default function Search() {
     searchBar: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colours.background,
+      backgroundColor: colours.navBarBackground,
       borderRadius: 24,
       paddingHorizontal: 12,
     },

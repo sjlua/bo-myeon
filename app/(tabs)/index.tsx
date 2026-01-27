@@ -46,7 +46,7 @@ export default function Index() {
       paddingBottom: 40,
     },
     headerSection: {
-      backgroundColor: colours.navBarBackground,
+      backgroundColor: colours.background,
       paddingHorizontal: 20,
       paddingTop: 20,
       paddingBottom: 24,
