@@ -10,10 +10,16 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { AppColours } from "@/constants/colours";
 import { OMDB_API_KEY, isApiConfigured } from "@/config/api";
+import {
+  addToCurrentlyWatching,
+  getCurrentlyWatching,
+} from "@/utils/currentlyWatchingStorage";
+import { MediaItem } from "@/types/media";
+import { useFocusEffect } from "@react-navigation/native";
 
 const SEARCH_SUGGESTIONS = [
   { id: "1", label: "Popular", icon: "flame" },
@@ -42,6 +48,9 @@ export default function Search() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState<SearchError | null>(null);
+  const [currentlyWatchingIds, setCurrentlyWatchingIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const styles = StyleSheet.create({
     container: {
@@ -331,38 +340,68 @@ export default function Search() {
     }
   };
 
-  // Render a single search result item
-  const renderResultItem = (result: any) => (
-    <View key={result.id} style={styles.resultItem}>
-      {result.poster && result.poster !== "N/A" ? (
-        <Image
-          source={{ uri: result.poster }}
-          style={styles.resultPoster}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-        />
-      ) : (
-        <View style={styles.resultPoster} />
-      )}
-      <View style={styles.resultContent}>
-        <Text style={styles.resultTitle}>{result.title}</Text>
-        <Text style={styles.resultSubtitle}>
-          {result.year} • {result.type}
-          {result.status ? ` • ${result.status}` : ""}
-        </Text>
-        {result.language && (
-          <Text style={styles.resultSubtitle}>Language: {result.language}</Text>
-        )}
-      </View>
-      <TouchableOpacity style={styles.addButton}>
-        <Ionicons
-          name="add-circle"
-          size={28}
-          color={colours.navBarButtonFocused}
-        />
-      </TouchableOpacity>
-    </View>
+  const loadCurrentlyWatchingList = useCallback(async () => {
+    const items = await getCurrentlyWatching();
+    const ids = new Set(items.map((item) => item.id));
+    setCurrentlyWatchingIds(ids);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCurrentlyWatchingList();
+      return () => undefined;
+    }, [loadCurrentlyWatchingList]),
   );
+
+  // Render a single search result item
+  const renderResultItem = (result: any) => {
+    const itemId = `${result.source}:${result.id}`;
+    const isAdded = currentlyWatchingIds.has(itemId);
+    return (
+      <View key={result.id} style={styles.resultItem}>
+        {result.poster && result.poster !== "N/A" ? (
+          <Image
+            source={{ uri: result.poster }}
+            style={styles.resultPoster}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={styles.resultPoster} />
+        )}
+        <View style={styles.resultContent}>
+          <Text style={styles.resultTitle}>{result.title}</Text>
+          <Text style={styles.resultSubtitle}>
+            {result.year} • {result.type}
+            {result.status ? ` • ${result.status}` : ""}
+          </Text>
+          {result.language && (
+            <Text style={styles.resultSubtitle}>
+              Language: {result.language}
+            </Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={async () => {
+            const item: MediaItem = {
+              id: itemId,
+              title: result.title,
+              poster: result.poster,
+            };
+            await addToCurrentlyWatching(item);
+            setCurrentlyWatchingIds((prev) => new Set(prev).add(itemId));
+          }}
+        >
+          <Ionicons
+            name={isAdded ? "checkmark-circle-outline" : "add-circle"}
+            size={28}
+            color={colours.navBarButtonFocused}
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <ScrollView
