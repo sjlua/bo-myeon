@@ -7,8 +7,10 @@ import {
   FlatList,
   StyleSheet,
   useColorScheme,
+  Alert,
+  Modal,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { AppColours } from "@/constants/colours";
 import { Link } from "expo-router";
@@ -16,6 +18,13 @@ import { MediaItem } from "@/types/media";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PosterCard from "@/components/PosterCard";
 import { hydrateMediaItemsWithPosters } from "@/utils/omdbPosterCache";
+import {
+  getCurrentlyWatching,
+  removeFromCurrentlyWatching,
+  setCurrentlyWatching as setCurrentlyWatchingStorage,
+  updateCurrentlyWatchingRating,
+} from "@/utils/currentlyWatchingStorage";
+import { useFocusEffect } from "@react-navigation/native";
 
 // Seed data for top shows and films
 const TOP_SHOWS_SEED: MediaItem[] = [
@@ -67,9 +76,9 @@ export default function Profile() {
     },
     headerSection: {
       backgroundColor: colours.background,
-      paddingHorizontal: 20,
       paddingTop: 20,
       paddingBottom: 24,
+      paddingHorizontal: 20,
     },
     nameContainer: {
       marginBottom: 16,
@@ -106,14 +115,10 @@ export default function Profile() {
       fontWeight: "700",
       color: colours.heading,
     },
-    descriptionContainer: {
-      gap: 8,
-    },
     descriptionInput: {
       fontSize: 14,
       color: colours.body,
       paddingVertical: 12,
-      paddingHorizontal: 12,
       backgroundColor: colours.background,
       borderRadius: 8,
       borderWidth: 2,
@@ -137,6 +142,11 @@ export default function Profile() {
       color: colours.description,
       flex: 1,
       lineHeight: 20,
+    },
+    bodyText: {
+      fontSize: 14,
+      color: colours.body,
+      paddingHorizontal: 20,
     },
     descriptionEditButton: {
       marginLeft: 8,
@@ -185,6 +195,70 @@ export default function Profile() {
     settingsContainer: {
       marginBottom: 20,
     },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.45)",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 24,
+    },
+    modalCard: {
+      width: "100%",
+      backgroundColor: colours.navBarBackground,
+      borderRadius: 16,
+      padding: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colours.heading,
+      marginBottom: 6,
+    },
+    modalSubtitle: {
+      fontSize: 13,
+      color: colours.description,
+      marginBottom: 12,
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderColor: colours.buttonBgColours,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 16,
+      color: colours.heading,
+      backgroundColor: colours.background,
+    },
+    modalError: {
+      marginTop: 8,
+      fontSize: 12,
+      color: "#FF3B30",
+    },
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 12,
+      marginTop: 16,
+    },
+    modalButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+    },
+    modalButtonSecondary: {
+      backgroundColor: colours.buttonBgColours,
+    },
+    modalButtonPrimary: {
+      backgroundColor: colours.navBarButtonFocused,
+    },
+    modalButtonSecondaryText: {
+      color: colours.heading,
+      fontWeight: "600",
+    },
+    modalButtonPrimaryText: {
+      color: colours.navBarBackground,
+      fontWeight: "700",
+    },
   });
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -193,9 +267,29 @@ export default function Profile() {
   const [description, setDescription] = useState(
     "Add a description about yourself...",
   );
-  const [averageRating] = useState(8.7);
+  const averageRating = useMemo(() => {
+    if (!Array.isArray(currentlyWatching) || currentlyWatching.length === 0) {
+      return null;
+    }
+    const ratedItems = currentlyWatching.filter(
+      (item) => typeof item.rating === "number",
+    );
+    if (ratedItems.length === 0) return null;
+    const total = ratedItems.reduce(
+      (sum, item) => sum + (item.rating as number),
+      0,
+    );
+    return Math.round((total / ratedItems.length) * 10) / 10;
+  }, [currentlyWatching]);
   const [topShows, setTopShows] = useState<MediaItem[]>(TOP_SHOWS_SEED);
   const [topFilms, setTopFilms] = useState<MediaItem[]>(TOP_FILMS_SEED);
+  const [currentlyWatching, setCurrentlyWatchingItems] = useState<MediaItem[]>(
+    [],
+  );
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [ratingValue, setRatingValue] = useState("");
+  const [ratingTarget, setRatingTarget] = useState<MediaItem | null>(null);
+  const [ratingError, setRatingError] = useState<string | null>(null);
 
   useEffect(() => {
     // Load name and description from AsyncStorage on component mount
@@ -216,6 +310,113 @@ export default function Profile() {
     // Save description to AsyncStorage whenever it changes
     AsyncStorage.setItem("profileDescription", description);
   }, [description]);
+
+  const loadCurrentlyWatching = useCallback(async () => {
+    const items = await getCurrentlyWatching();
+    setCurrentlyWatchingItems(items);
+  }, []);
+
+  const handleOpenRating = (item: MediaItem) => {
+    setRatingTarget(item);
+    setRatingValue(
+      item.rating !== undefined && item.rating !== null
+        ? String(item.rating)
+        : "",
+    );
+    setRatingError(null);
+    setRatingModalVisible(true);
+  };
+
+  const handleSaveRating = async () => {
+    if (!ratingTarget) return;
+    const parsed = Number.parseFloat(ratingValue);
+    if (Number.isNaN(parsed) || parsed < 0 || parsed > 10) {
+      setRatingError("Enter a rating between 0 and 10.");
+      return;
+    }
+
+    const updated = await updateCurrentlyWatchingRating(
+      ratingTarget.id,
+      parsed,
+    );
+    setCurrentlyWatchingItems(updated);
+    setRatingModalVisible(false);
+  };
+
+  const handleRemoveItem = async (item: MediaItem) => {
+    const updated = await removeFromCurrentlyWatching(item.id);
+    setCurrentlyWatchingItems(updated);
+  };
+
+  const moveCurrentlyWatchingItem = async (
+    fromIndex: number,
+    toIndex: number,
+  ) => {
+    if (toIndex < 0 || toIndex >= currentlyWatching.length) return;
+    const next = [...currentlyWatching];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    await setCurrentlyWatchingStorage(next);
+    setCurrentlyWatchingItems(next);
+  };
+
+  const handlePressItem = (item: MediaItem) => {
+    Alert.alert(item.title, "Choose an option", [
+      { text: "Rate it!", onPress: () => handleOpenRating(item) },
+      {
+        text: "Remove it",
+        style: "destructive",
+        onPress: () => handleRemoveItem(item),
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
+  const handleLongPressItem = (item: MediaItem, index: number) => {
+    const options: {
+      text: string;
+      onPress?: () => void;
+      style?: "default" | "cancel" | "destructive";
+    }[] = [];
+
+    if (index > 0) {
+      options.push({
+        text: "Move Left",
+        onPress: () => moveCurrentlyWatchingItem(index, index - 1),
+      });
+      options.push({
+        text: "Move to Start",
+        onPress: () => moveCurrentlyWatchingItem(index, 0),
+      });
+    }
+
+    if (index < currentlyWatching.length - 1) {
+      options.push({
+        text: "Move Right",
+        onPress: () => moveCurrentlyWatchingItem(index, index + 1),
+      });
+      options.push({
+        text: "Move to End",
+        onPress: () =>
+          moveCurrentlyWatchingItem(index, currentlyWatching.length - 1),
+      });
+    }
+
+    options.push({ text: "Cancel", style: "cancel" });
+
+    Alert.alert(item.title, "Reorder item", options);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCurrentlyWatching();
+      return () => undefined;
+    }, [loadCurrentlyWatching]),
+  );
+
+  useEffect(() => {
+    loadCurrentlyWatching();
+  }, [loadCurrentlyWatching]);
 
   useEffect(() => {
     let isMounted = true;
@@ -321,8 +522,38 @@ export default function Profile() {
         <Ionicons name="star" size={32} color={colours.ratingStars} />
         <View>
           <Text style={styles.averageRatingLabel}>Average Rating</Text>
-          <Text style={styles.averageRatingValue}>{averageRating}</Text>
+          <Text style={styles.averageRatingValue}>
+            {averageRating !== null ? averageRating : "No ratings yet!"}
+          </Text>
         </View>
+      </View>
+
+      {/* Currently Watching Section */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Currently Watching</Text>
+        {currentlyWatching.length === 0 ? (
+          <Text style={styles.bodyText}>
+            Add shows or movies from Search to see them here.
+          </Text>
+        ) : (
+          <FlatList
+            data={currentlyWatching}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => handlePressItem(item)}
+                onLongPress={() => handleLongPressItem(item, index)}
+              >
+                <PosterCard item={item} />
+              </TouchableOpacity>
+            )}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.contentContainerStyle}
+            scrollEnabled
+          />
+        )}
       </View>
 
       {/* Top Shows Section */}
@@ -358,6 +589,50 @@ export default function Profile() {
           <Text style={styles.settingsLink}>Settings</Text>
         </Link>
       </View>
+
+      <Modal
+        transparent
+        visible={ratingModalVisible}
+        animationType="fade"
+        onRequestClose={() => setRatingModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Rate it</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter a rating from 0 to 10.
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={ratingValue}
+              onChangeText={(value) => {
+                setRatingValue(value);
+                setRatingError(null);
+              }}
+              placeholder="e.g., 8.5"
+              placeholderTextColor={colours.description}
+              keyboardType="decimal-pad"
+            />
+            {ratingError && (
+              <Text style={styles.modalError}>{ratingError}</Text>
+            )}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setRatingModalVisible(false)}
+              >
+                <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleSaveRating}
+              >
+                <Text style={styles.modalButtonPrimaryText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
