@@ -26,23 +26,6 @@ import {
 } from "@/utils/currentlyWatchingStorage";
 import { useFocusEffect } from "@react-navigation/native";
 
-// Seed data for top shows and films
-const TOP_SHOWS_SEED: MediaItem[] = [
-  { id: "tt0903747", title: "Breaking Bad", rating: 9.5 },
-  { id: "tt7366338", title: "Chernobyl", rating: 9.3 },
-  { id: "tt7660850", title: "Succession", rating: 9.1 },
-  { id: "tt3581920", title: "The Last of Us", rating: 8.9 },
-  { id: "tt0944947", title: "Game of Thrones", rating: 8.7 },
-];
-
-const TOP_FILMS_SEED: MediaItem[] = [
-  { id: "tt1375666", title: "Inception", rating: 8.8 },
-  { id: "tt0111161", title: "The Shawshank Redemption", rating: 9.3 },
-  { id: "tt6751668", title: "Parasite", rating: 8.6 },
-  { id: "tt15398776", title: "Oppenheimer", rating: 8.4 },
-  { id: "tt15239678", title: "Dune: Part Two", rating: 8.5 },
-];
-
 export default function Profile() {
   const colorScheme = useColorScheme() || "dark";
   const colours = AppColours[colorScheme];
@@ -267,8 +250,7 @@ export default function Profile() {
   const [description, setDescription] = useState(
     "Add a description about yourself...",
   );
-  const [topShows, setTopShows] = useState<MediaItem[]>(TOP_SHOWS_SEED);
-  const [topFilms, setTopFilms] = useState<MediaItem[]>(TOP_FILMS_SEED);
+
   const [currentlyWatching, setCurrentlyWatchingItems] = useState<MediaItem[]>(
     [],
   );
@@ -291,6 +273,27 @@ export default function Profile() {
       0,
     );
     return Math.round((total / ratedItems.length) * 10) / 10;
+  }, [currentlyWatching]);
+
+  // Get top shows - filtered and sorted from currently watching
+  const topWatched = useMemo(() => {
+    return currentlyWatching
+      .filter((item) => typeof item.rating === "number" && item.rating > 0)
+      .sort((a, b) => (b.rating as number) - (a.rating as number));
+  }, [currentlyWatching]);
+
+  // Get unrated items - items without a rating or rating = 0
+  const unratedItems = useMemo(() => {
+    return currentlyWatching.filter(
+      (item) => !item.rating || item.rating === 0,
+    );
+  }, [currentlyWatching]);
+
+  // Get completed items - items with a rating
+  const completedItems = useMemo(() => {
+    return currentlyWatching.filter(
+      (item) => typeof item.rating === "number" && item.rating > 0,
+    );
   }, [currentlyWatching]);
 
   useEffect(() => {
@@ -422,26 +425,11 @@ export default function Profile() {
     loadCurrentlyWatching();
   }, [loadCurrentlyWatching]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const hydratePosters = async () => {
-      const [shows, films] = await Promise.all([
-        hydrateMediaItemsWithPosters(TOP_SHOWS_SEED),
-        hydrateMediaItemsWithPosters(TOP_FILMS_SEED),
-      ]);
-
-      if (!isMounted) return;
-      setTopShows(shows);
-      setTopFilms(films);
-    };
-
-    hydratePosters();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadCurrentlyWatching();
+    }, [loadCurrentlyWatching]),
+  );
 
   return (
     <ScrollView
@@ -535,13 +523,13 @@ export default function Profile() {
       {/* Currently Watching Section */}
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Currently Watching</Text>
-        {currentlyWatching.length === 0 ? (
+        {unratedItems.length === 0 ? (
           <Text style={styles.bodyText}>
             Add shows or movies from Search to see them here.
           </Text>
         ) : (
           <FlatList
-            data={currentlyWatching}
+            data={unratedItems}
             renderItem={({ item, index }) => (
               <TouchableOpacity
                 activeOpacity={0.8}
@@ -560,11 +548,11 @@ export default function Profile() {
         )}
       </View>
 
-      {/* Top Shows Section */}
+      {/* Top Watched Section */}
       <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Top Shows</Text>
+        <Text style={styles.sectionTitle}>Top Watched</Text>
         <FlatList
-          data={topShows}
+          data={topWatched}
           renderItem={({ item }) => <PosterCard item={item} />}
           keyExtractor={(item) => item.id}
           horizontal
@@ -574,18 +562,30 @@ export default function Profile() {
         />
       </View>
 
-      {/* Top Films Section */}
-      <View style={[styles.sectionContainer, { marginBottom: 20 }]}>
-        <Text style={styles.sectionTitle}>Top Films</Text>
-        <FlatList
-          data={topFilms}
-          renderItem={({ item }) => <PosterCard item={item} />}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.contentContainerStyle}
-          scrollEnabled
-        />
+      {/* Completed Section */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Completed</Text>
+        {completedItems.length === 0 ? (
+          <Text style={styles.bodyText}>No completed shows or movies yet.</Text>
+        ) : (
+          <FlatList
+            data={completedItems}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => handlePressItem(item)}
+                onLongPress={() => handleLongPressItem(item, index)}
+              >
+                <PosterCard item={item} />
+              </TouchableOpacity>
+            )}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.contentContainerStyle}
+            scrollEnabled
+          />
+        )}
       </View>
 
       <View style={styles.settingsContainer}>
