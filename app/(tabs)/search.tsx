@@ -245,14 +245,29 @@ export default function Search() {
 
       if (data.Search && data.Search.length > 0) {
         setSearchResults(
-          data.Search.map((item: any) => ({
-            id: item.imdbID,
-            title: item.Title,
-            year: item.Year,
-            type: item.Type,
-            poster: item.Poster,
-            source: "imdb",
-          })),
+          data.Search.map((item: any) => {
+            // Parse year and status from IMDb format
+            // IMDb returns "2021–" for ongoing series, "2021–2023" for completed, or "2021" for movies
+            const yearString = item.Year || "";
+            let year = yearString;
+            let status = undefined;
+
+            // Check if it's an ongoing series (ends with "–")
+            if (yearString.endsWith("–") || yearString.endsWith("-")) {
+              year = yearString.replace(/–|-$/, ""); // Remove the dash
+              status = "Running";
+            }
+
+            return {
+              id: item.imdbID,
+              title: item.Title,
+              year: year,
+              type: item.Type,
+              poster: item.Poster,
+              source: "imdb",
+              status: status,
+            };
+          }),
         );
         setSearchError(null);
       } else {
