@@ -8,8 +8,8 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { AppColours } from "@/constants/colours";
@@ -338,7 +338,8 @@ export default function Search() {
         <Image
           source={{ uri: result.poster }}
           style={styles.resultPoster}
-          resizeMode="cover"
+          contentFit="cover"
+          cachePolicy="memory-disk"
         />
       ) : (
         <View style={styles.resultPoster} />

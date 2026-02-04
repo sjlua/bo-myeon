@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, useColorScheme } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { MediaItem } from "@/types/media";
 import { AppColours } from "@/constants/colours";
@@ -26,8 +27,10 @@ export default function PosterCard({ item }: PosterCardProps) {
       marginBottom: 8,
       overflow: "hidden",
     },
-    posterEmoji: {
-      fontSize: 48,
+    posterFallback: {
+      width: "100%",
+      height: "100%",
+      backgroundColor: colours.buttonBgColours,
     },
     posterTitle: {
       fontSize: 12,
@@ -50,7 +53,16 @@ export default function PosterCard({ item }: PosterCardProps) {
   return (
     <View style={styles.posterCard}>
       <View style={styles.posterImage}>
-        <Text style={styles.posterEmoji}>{item.poster}</Text>
+        {item.poster && item.poster !== "N/A" ? (
+          <Image
+            source={{ uri: item.poster }}
+            style={StyleSheet.absoluteFillObject}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={styles.posterFallback} />
+        )}
       </View>
       <Text style={styles.posterTitle} numberOfLines={2}>
         {item.title}

@@ -14,27 +14,48 @@ import { AppColours } from "@/constants/colours";
 import { Link } from "expo-router";
 import { MediaItem } from "@/types/media";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import PosterCard from "@/components/PosterCard";
+import { hydrateMediaItemsWithPosters } from "@/utils/omdbPosterCache";
 
-// Placeholder data for top shows and films
-const PLACEHOLDER_SHOWS: MediaItem[] = [
-  { id: "1", title: "Breaking Bad", rating: 9.5, poster: "📺" },
-  { id: "2", title: "Chernobyl", rating: 9.3, poster: "📺" },
-  { id: "3", title: "Succession", rating: 9.1, poster: "📺" },
-  { id: "4", title: "The Last of Us", rating: 8.9, poster: "📺" },
-  { id: "5", title: "Game of Thrones", rating: 8.7, poster: "📺" },
+// Seed data for top shows and films
+const TOP_SHOWS_SEED: MediaItem[] = [
+  { id: "tt0903747", title: "Breaking Bad", rating: 9.5 },
+  { id: "tt7366338", title: "Chernobyl", rating: 9.3 },
+  { id: "tt7660850", title: "Succession", rating: 9.1 },
+  { id: "tt3581920", title: "The Last of Us", rating: 8.9 },
+  { id: "tt0944947", title: "Game of Thrones", rating: 8.7 },
 ];
 
-const PLACEHOLDER_FILMS: MediaItem[] = [
-  { id: "1", title: "Inception", rating: 8.8, poster: "🎬" },
-  { id: "2", title: "The Shawshank Redemption", rating: 9.3, poster: "🎬" },
-  { id: "3", title: "Parasite", rating: 8.6, poster: "🎬" },
-  { id: "4", title: "Oppenheimer", rating: 8.4, poster: "🎬" },
-  { id: "5", title: "Dune: Part Two", rating: 8.5, poster: "🎬" },
+const TOP_FILMS_SEED: MediaItem[] = [
+  { id: "tt1375666", title: "Inception", rating: 8.8 },
+  { id: "tt0111161", title: "The Shawshank Redemption", rating: 9.3 },
+  { id: "tt6751668", title: "Parasite", rating: 8.6 },
+  { id: "tt15398776", title: "Oppenheimer", rating: 8.4 },
+  { id: "tt15239678", title: "Dune: Part Two", rating: 8.5 },
 ];
 
 export default function Profile() {
   const colorScheme = useColorScheme() || "dark";
   const colours = AppColours[colorScheme];
+
+  const saveMediaItems = async (mediaArr: MediaItem[]) => {
+    try {
+      const jsonMedia = JSON.stringify(mediaArr);
+      await AsyncStorage.setItem("mediaItems", jsonMedia);
+    } catch (error) {
+      console.error("Error saving media items to device:", error);
+    }
+  };
+
+  const loadMediaItems = async (): Promise<MediaItem[]> => {
+    try {
+      const jsonMedia = await AsyncStorage.getItem("mediaItems");
+      return jsonMedia ? JSON.parse(jsonMedia) : [];
+    } catch (error) {
+      console.error("Error loading media items from device:", error);
+      return [];
+    }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -151,39 +172,6 @@ export default function Profile() {
       marginBottom: 16,
       paddingHorizontal: 20,
     },
-    posterCard: {
-      marginRight: 16,
-      marginBottom: 8,
-    },
-    posterImage: {
-      width: 120,
-      height: 180,
-      borderRadius: 8,
-      backgroundColor: colours.buttonBgColours,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 8,
-      overflow: "hidden",
-    },
-    posterEmoji: {
-      fontSize: 48,
-    },
-    posterTitle: {
-      fontSize: 12,
-      fontWeight: "600",
-      color: colours.heading,
-      marginBottom: 4,
-      width: 120,
-    },
-    posterRating: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    ratingText: {
-      fontSize: 12,
-      color: colours.rating,
-      marginLeft: 4,
-    },
     contentContainerStyle: {
       paddingHorizontal: 20,
     },
@@ -206,6 +194,8 @@ export default function Profile() {
     "Add a description about yourself...",
   );
   const [averageRating] = useState(8.7);
+  const [topShows, setTopShows] = useState<MediaItem[]>(TOP_SHOWS_SEED);
+  const [topFilms, setTopFilms] = useState<MediaItem[]>(TOP_FILMS_SEED);
 
   useEffect(() => {
     // Load name and description from AsyncStorage on component mount
@@ -227,20 +217,26 @@ export default function Profile() {
     AsyncStorage.setItem("profileDescription", description);
   }, [description]);
 
-  const PosterCard = ({ item }: { item: MediaItem }) => (
-    <View style={styles.posterCard}>
-      <View style={styles.posterImage}>
-        <Text style={styles.posterEmoji}>{item.poster}</Text>
-      </View>
-      <Text style={styles.posterTitle} numberOfLines={2}>
-        {item.title}
-      </Text>
-      <View style={styles.posterRating}>
-        <Ionicons name="star" size={14} color={colours.ratingStars} />
-        <Text style={styles.ratingText}>{item.rating}</Text>
-      </View>
-    </View>
-  );
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydratePosters = async () => {
+      const [shows, films] = await Promise.all([
+        hydrateMediaItemsWithPosters(TOP_SHOWS_SEED),
+        hydrateMediaItemsWithPosters(TOP_FILMS_SEED),
+      ]);
+
+      if (!isMounted) return;
+      setTopShows(shows);
+      setTopFilms(films);
+    };
+
+    hydratePosters();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <ScrollView
@@ -333,7 +329,7 @@ export default function Profile() {
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Top Shows</Text>
         <FlatList
-          data={PLACEHOLDER_SHOWS}
+          data={topShows}
           renderItem={({ item }) => <PosterCard item={item} />}
           keyExtractor={(item) => item.id}
           horizontal
@@ -347,7 +343,7 @@ export default function Profile() {
       <View style={[styles.sectionContainer, { marginBottom: 20 }]}>
         <Text style={styles.sectionTitle}>Top Films</Text>
         <FlatList
-          data={PLACEHOLDER_FILMS}
+          data={topFilms}
           renderItem={({ item }) => <PosterCard item={item} />}
           keyExtractor={(item) => item.id}
           horizontal

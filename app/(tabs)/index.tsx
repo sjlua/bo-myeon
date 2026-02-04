@@ -5,37 +5,67 @@ import {
   StyleSheet,
   useColorScheme,
 } from "react-native";
+import { useEffect, useState } from "react";
 import { AppColours } from "@/constants/colours";
 import Shelf from "@/components/Shelf";
 import { MediaItem } from "@/types/media";
+import { hydrateMediaItemsWithPosters } from "@/utils/omdbPosterCache";
 
-// Placeholder data for continue watching
-const PLACEHOLDER_CONTINUE_WATCHING: MediaItem[] = [
-  { id: "1", title: "Breaking Bad", poster: "📺" },
-  { id: "2", title: "Chernobyl", poster: "📺" },
-  { id: "3", title: "Succession", poster: "📺" },
-  { id: "4", title: "The Last of Us", poster: "📺" },
+// Seed data for continue watching
+const CONTINUE_WATCHING_SEED: MediaItem[] = [
+  { id: "tt0903747", title: "Breaking Bad" },
+  { id: "tt7366338", title: "Chernobyl" },
+  { id: "tt7660850", title: "Succession" },
+  { id: "tt3581920", title: "The Last of Us" },
 ];
 
-// Placeholder data for new shows
-const PLACEHOLDER_NEW_SHOWS: MediaItem[] = [
-  { id: "1", title: "New Show 1", rating: 8.5, poster: "📺" },
-  { id: "2", title: "New Show 2", rating: 8.2, poster: "📺" },
-  { id: "3", title: "New Show 3", rating: 8.7, poster: "📺" },
-  { id: "4", title: "New Show 4", rating: 8.3, poster: "📺" },
+// Seed data for new shows
+const NEW_SHOWS_SEED: MediaItem[] = [
+  { id: "tt1312171", title: "The Umbrella Academy", rating: 8.0 },
+  { id: "tt9253284", title: "The Witcher", rating: 8.0 },
+  { id: "tt10293938", title: "The Bear", rating: 8.6 },
+  { id: "tt9157530", title: "Stranger Things", rating: 8.7 },
 ];
 
-// Placeholder data for new movies
-const PLACEHOLDER_NEW_MOVIES: MediaItem[] = [
-  { id: "1", title: "New Movie 1", rating: 8.6, poster: "🎬" },
-  { id: "2", title: "New Movie 2", rating: 8.9, poster: "🎬" },
-  { id: "3", title: "New Movie 3", rating: 8.4, poster: "🎬" },
-  { id: "4", title: "New Movie 4", rating: 8.8, poster: "🎬" },
+// Seed data for new movies
+const NEW_MOVIES_SEED: MediaItem[] = [
+  { id: "tt15398776", title: "Oppenheimer", rating: 8.4 },
+  { id: "tt6710474", title: "Everything Everywhere All at Once", rating: 7.8 },
+  { id: "tt15239678", title: "Dune: Part Two", rating: 8.5 },
+  { id: "tt9362722", title: "Spider-Man: Across the Spider-Verse", rating: 8.6 },
 ];
 
 export default function Index() {
   const colorScheme = useColorScheme() || "dark";
   const colours = AppColours[colorScheme];
+  const [continueWatching, setContinueWatching] = useState<MediaItem[]>(
+    CONTINUE_WATCHING_SEED,
+  );
+  const [newShows, setNewShows] = useState<MediaItem[]>(NEW_SHOWS_SEED);
+  const [newMovies, setNewMovies] = useState<MediaItem[]>(NEW_MOVIES_SEED);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydratePosters = async () => {
+      const [continuePosters, showPosters, moviePosters] = await Promise.all([
+        hydrateMediaItemsWithPosters(CONTINUE_WATCHING_SEED),
+        hydrateMediaItemsWithPosters(NEW_SHOWS_SEED),
+        hydrateMediaItemsWithPosters(NEW_MOVIES_SEED),
+      ]);
+
+      if (!isMounted) return;
+      setContinueWatching(continuePosters);
+      setNewShows(showPosters);
+      setNewMovies(moviePosters);
+    };
+
+    hydratePosters();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const styles = StyleSheet.create({
     container: {
@@ -91,7 +121,7 @@ export default function Index() {
       {/* Continue Watching Section */}
       <Shelf
         title="Continue Watching"
-        data={PLACEHOLDER_CONTINUE_WATCHING}
+        data={continueWatching}
         showProgress={true}
         onItemPress={handleItemPress}
       />
@@ -99,7 +129,7 @@ export default function Index() {
       {/* New Shows Section */}
       <Shelf
         title="New Shows"
-        data={PLACEHOLDER_NEW_SHOWS}
+        data={newShows}
         showViewAll={true}
         viewAllText="See All Latest Shows"
         onViewAllPress={() => handleViewAllPress("shows")}
@@ -109,7 +139,7 @@ export default function Index() {
       {/* New Movies Section */}
       <Shelf
         title="New Movies"
-        data={PLACEHOLDER_NEW_MOVIES}
+        data={newMovies}
         showViewAll={true}
         viewAllText="See All Latest Movies"
         onViewAllPress={() => handleViewAllPress("movies")}
