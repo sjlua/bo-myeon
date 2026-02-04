@@ -147,6 +147,7 @@ export default function Search() {
       marginBottom: 12,
       flexDirection: "row",
       gap: 12,
+      alignItems: "center",
     },
     resultPoster: {
       width: 60,
@@ -168,6 +169,9 @@ export default function Search() {
       fontSize: 13,
       color: colours.description,
       marginBottom: 8,
+    },
+    addButton: {
+      padding: 8,
     },
     noResultsText: {
       fontSize: 14,
@@ -314,7 +318,7 @@ export default function Search() {
 
   // Render a single search result item
   const renderResultItem = (result: any) => (
-    <TouchableOpacity key={result.id} style={styles.resultItem}>
+    <View key={result.id} style={styles.resultItem}>
       {result.poster && result.poster !== "N/A" ? (
         <Image
           source={{ uri: result.poster }}
@@ -334,7 +338,14 @@ export default function Search() {
           <Text style={styles.resultSubtitle}>Language: {result.language}</Text>
         )}
       </View>
-    </TouchableOpacity>
+      <TouchableOpacity style={styles.addButton}>
+        <Ionicons
+          name="add-circle"
+          size={28}
+          color={colours.navBarButtonFocused}
+        />
+      </TouchableOpacity>
+    </View>
   );
 
   return (
