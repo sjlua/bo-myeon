@@ -5,21 +5,15 @@ import {
   StyleSheet,
   useColorScheme,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppColours } from "@/constants/colours";
 import Shelf from "@/components/Shelf";
 import { MediaItem } from "@/types/media";
 import { hydrateMediaItemsWithPosters } from "@/utils/omdbPosterCache";
+import { getCurrentlyWatching } from "@/utils/currentlyWatchingStorage";
+import { useFocusEffect } from "@react-navigation/native";
 
-// Seed data for continue watching
-const CONTINUE_WATCHING_SEED: MediaItem[] = [
-  { id: "tt0903747", title: "Breaking Bad" },
-  { id: "tt7366338", title: "Chernobyl" },
-  { id: "tt7660850", title: "Succession" },
-  { id: "tt3581920", title: "The Last of Us" },
-];
-
-// Seed data for new shows
+// Seed data for new shows (2025-2026)
 const NEW_SHOWS_SEED: MediaItem[] = [
   { id: "tt1312171", title: "The Umbrella Academy", rating: 8.0 },
   { id: "tt9253284", title: "The Witcher", rating: 8.0 },
@@ -27,35 +21,47 @@ const NEW_SHOWS_SEED: MediaItem[] = [
   { id: "tt9157530", title: "Stranger Things", rating: 8.7 },
 ];
 
-// Seed data for new movies
+// Seed data for new movies (2025-2026)
 const NEW_MOVIES_SEED: MediaItem[] = [
-  { id: "tt15398776", title: "Oppenheimer", rating: 8.4 },
-  { id: "tt6710474", title: "Everything Everywhere All at Once", rating: 7.8 },
-  { id: "tt15239678", title: "Dune: Part Two", rating: 8.5 },
-  { id: "tt9362722", title: "Spider-Man: Across the Spider-Verse", rating: 8.6 },
+  { id: "tt10872600", title: "Avengers: Doomsday", rating: 8.0 },
+  { id: "tt9362722", title: "Blade", rating: 8.0 },
+  { id: "tt5433140", title: "Thunderbolts*", rating: 8.1 },
+  { id: "tt27345849", title: "Superman: Legacy", rating: 8.2 },
 ];
 
 export default function Index() {
   const colorScheme = useColorScheme() || "dark";
   const colours = AppColours[colorScheme];
-  const [continueWatching, setContinueWatching] = useState<MediaItem[]>(
-    CONTINUE_WATCHING_SEED,
-  );
+  const [continueWatching, setContinueWatching] = useState<MediaItem[]>([]);
   const [newShows, setNewShows] = useState<MediaItem[]>(NEW_SHOWS_SEED);
   const [newMovies, setNewMovies] = useState<MediaItem[]>(NEW_MOVIES_SEED);
+
+  const loadCurrentlyWatching = useCallback(async () => {
+    const items = await getCurrentlyWatching();
+    setContinueWatching(items);
+  }, []);
+
+  // Filter to show only unrated items in Currently Watching
+  const unratedWatching = useMemo(() => {
+    return continueWatching.filter((item) => !item.rating || item.rating === 0);
+  }, [continueWatching]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCurrentlyWatching();
+    }, [loadCurrentlyWatching]),
+  );
 
   useEffect(() => {
     let isMounted = true;
 
     const hydratePosters = async () => {
-      const [continuePosters, showPosters, moviePosters] = await Promise.all([
-        hydrateMediaItemsWithPosters(CONTINUE_WATCHING_SEED),
+      const [showPosters, moviePosters] = await Promise.all([
         hydrateMediaItemsWithPosters(NEW_SHOWS_SEED),
         hydrateMediaItemsWithPosters(NEW_MOVIES_SEED),
       ]);
 
       if (!isMounted) return;
-      setContinueWatching(continuePosters);
       setNewShows(showPosters);
       setNewMovies(moviePosters);
     };
@@ -118,10 +124,10 @@ export default function Index() {
         </Text>
       </View>
 
-      {/* Continue Watching Section */}
+      {/* Currently Watching Section */}
       <Shelf
-        title="Continue Watching"
-        data={continueWatching}
+        title="Currently Watching"
+        data={unratedWatching}
         showProgress={true}
         onItemPress={handleItemPress}
       />
