@@ -267,6 +267,17 @@ export default function Profile() {
   const [description, setDescription] = useState(
     "Add a description about yourself...",
   );
+  const [topShows, setTopShows] = useState<MediaItem[]>(TOP_SHOWS_SEED);
+  const [topFilms, setTopFilms] = useState<MediaItem[]>(TOP_FILMS_SEED);
+  const [currentlyWatching, setCurrentlyWatchingItems] = useState<MediaItem[]>(
+    [],
+  );
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [ratingValue, setRatingValue] = useState("");
+  const [ratingTarget, setRatingTarget] = useState<MediaItem | null>(null);
+  const [ratingError, setRatingError] = useState<string | null>(null);
+
+  // Calculate average rating based on items in the Currently Watching list
   const averageRating = useMemo(() => {
     if (!Array.isArray(currentlyWatching) || currentlyWatching.length === 0) {
       return null;
@@ -281,15 +292,6 @@ export default function Profile() {
     );
     return Math.round((total / ratedItems.length) * 10) / 10;
   }, [currentlyWatching]);
-  const [topShows, setTopShows] = useState<MediaItem[]>(TOP_SHOWS_SEED);
-  const [topFilms, setTopFilms] = useState<MediaItem[]>(TOP_FILMS_SEED);
-  const [currentlyWatching, setCurrentlyWatchingItems] = useState<MediaItem[]>(
-    [],
-  );
-  const [ratingModalVisible, setRatingModalVisible] = useState(false);
-  const [ratingValue, setRatingValue] = useState("");
-  const [ratingTarget, setRatingTarget] = useState<MediaItem | null>(null);
-  const [ratingError, setRatingError] = useState<string | null>(null);
 
   useEffect(() => {
     // Load name and description from AsyncStorage on component mount
@@ -372,6 +374,8 @@ export default function Profile() {
     ]);
   };
 
+  // Handle long press to reorder items
+  // This will show options to move the item left/right or to start/end
   const handleLongPressItem = (item: MediaItem, index: number) => {
     const options: {
       text: string;
